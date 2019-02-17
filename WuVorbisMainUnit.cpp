@@ -756,23 +756,23 @@ extern "C"  unsigned __int32 TVPCPUType = 0;
 extern "C" unsigned __int32 DetectCPU(void)
 {
 	TVPCPUType = TVPCheckCPU();
-#ifndef _M_X64
-	if(TVPCPUType & TVP_CPU_HAS_SSE)
-	{
-		// do SSE check
-		__try
-		{
-			_asm { xorps xmm0, xmm0 } //  (SSE)
-		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
-		{
-			// exception had been ocured
-			// execution of 'xorps' is failed (XMM registers not available)
-			TVPCPUType &=~ TVP_CPU_HAS_SSE;
-			TVPCPUType &=~ TVP_CPU_HAS_SSE2;
-		}
-	}
-#endif
+// #ifndef _M_X64
+// 	if(TVPCPUType & TVP_CPU_HAS_SSE)
+// 	{
+// 		// do SSE check
+// 		__try
+// 		{
+// 			_asm { xorps xmm0, xmm0 } //  (SSE)
+// 		}
+// 		__except(EXCEPTION_EXECUTE_HANDLER)
+// 		{
+// 			// exception had been ocured
+// 			// execution of 'xorps' is failed (XMM registers not available)
+// 			TVPCPUType &=~ TVP_CPU_HAS_SSE;
+// 			TVPCPUType &=~ TVP_CPU_HAS_SSE2;
+// 		}
+// 	}
+// #endif
 	return TVPCPUType;
 }
 //---------------------------------------------------------------------------

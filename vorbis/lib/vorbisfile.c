@@ -1498,248 +1498,248 @@ extern	int CPU_SSE;
 extern	int CPU_MMX;
 extern  int CPU_3DN;
 
-static void float_to_pcm_stereo(float **pcm, short int *output, int samples)
-{
-	int tmp1;
-	int tmp2;
-	_asm
-	{
-		mov		eax, pcm
-		mov		edx, [eax]  // channel 1
-		mov		esi, [eax + 4]  // channel 2
-		mov		ecx, samples;
-		mov		edi, output; // out
-loop0:
-		fld		dword ptr [edx]
-		add		edi, 4
-		fld		dword ptr [esi]
-		add		edx, 4
-		fistp	dword ptr tmp2
-		add		esi, 4
-		fistp	dword ptr tmp1
+// static void float_to_pcm_stereo(float **pcm, short int *output, int samples)
+// {
+// 	int tmp1;
+// 	int tmp2;
+// 	_asm
+// 	{
+// 		mov		eax, pcm
+// 		mov		edx, [eax]  // channel 1
+// 		mov		esi, [eax + 4]  // channel 2
+// 		mov		ecx, samples;
+// 		mov		edi, output; // out
+// loop0:
+// 		fld		dword ptr [edx]
+// 		add		edi, 4
+// 		fld		dword ptr [esi]
+// 		add		edx, 4
+// 		fistp	dword ptr tmp2
+// 		add		esi, 4
+// 		fistp	dword ptr tmp1
 
-		mov		eax, tmp1
-		mov		ebx, tmp2
-		cmp		eax, -32768
-		jle		esc1_1
-		cmp		eax, 32767
-		jge		esc1_2
-		jmp		escp1
-esc1_1:	
-		mov		eax, -32768
-		jmp		escp1
-esc1_2:
-		mov		eax, 32767
+// 		mov		eax, tmp1
+// 		mov		ebx, tmp2
+// 		cmp		eax, -32768
+// 		jle		esc1_1
+// 		cmp		eax, 32767
+// 		jge		esc1_2
+// 		jmp		escp1
+// esc1_1:	
+// 		mov		eax, -32768
+// 		jmp		escp1
+// esc1_2:
+// 		mov		eax, 32767
 
-escp1:
-		and		eax, 0xffff
+// escp1:
+// 		and		eax, 0xffff
 
-		cmp		ebx, -32768
-		jle		esc2_1
-		cmp		ebx, 32767
-		jge		esc2_2
-		shl		ebx, 16
-		jmp		escp2
-esc2_1:	
-		mov		ebx, -32768*65536
-		jmp		escp2
-esc2_2:
-		mov		ebx, +32767*65536
+// 		cmp		ebx, -32768
+// 		jle		esc2_1
+// 		cmp		ebx, 32767
+// 		jge		esc2_2
+// 		shl		ebx, 16
+// 		jmp		escp2
+// esc2_1:	
+// 		mov		ebx, -32768*65536
+// 		jmp		escp2
+// esc2_2:
+// 		mov		ebx, +32767*65536
 
-escp2:
-		or		ebx, eax
-		dec		ecx
-		mov		[edi-4], ebx
+// escp2:
+// 		or		ebx, eax
+// 		dec		ecx
+// 		mov		[edi-4], ebx
 
-		jnz		loop0
-	};
-}
+// 		jnz		loop0
+// 	};
+// }
 
 __declspec(align(8)) static int packed_sign_ext[] = {0x80000000, 0x80000000};
 __declspec(align(8)) static float packed_adj_q[] = {0.5, 0.5};
 
 
-static int float_to_pcm_stereo_3dn(float **pcm, short int *output, int samples)
-{
-	_asm
-	{
-		mov eax, pcm
-		mov edx, [eax]
-		mov esi, [eax + 4]
-		mov ecx, samples
-		mov edi, output
-		shl	ecx, 2
-		add ecx, edi
-		cmp edi, ecx
-		jnl exit0
+// static int float_to_pcm_stereo_3dn(float **pcm, short int *output, int samples)
+// {
+// 	_asm
+// 	{
+// 		mov eax, pcm
+// 		mov edx, [eax]
+// 		mov esi, [eax + 4]
+// 		mov ecx, samples
+// 		mov edi, output
+// 		shl	ecx, 2
+// 		add ecx, edi
+// 		cmp edi, ecx
+// 		jnl exit0
 
-		align 16
-loop0:
-		add esi, 32 // pcm[1]
+// 		align 16
+// loop0:
+// 		add esi, 32 // pcm[1]
 
-		movq	mm0,	[edx]
-		movq	mm4,	[edx+8]
-		movq	mm1,	[esi-32]
-		movq	mm5,	[esi+8-32]
+// 		movq	mm0,	[edx]
+// 		movq	mm4,	[edx+8]
+// 		movq	mm1,	[esi-32]
+// 		movq	mm5,	[esi+8-32]
 
-		movq	mm2,	mm0
-		movq	mm3,	mm4
-		pand	mm2,	packed_sign_ext
-		pand	mm3,	packed_sign_ext
-		pxor	mm2,	packed_adj_q
-		pxor	mm3,	packed_adj_q
-		pfadd	mm0,	mm2
-		pfadd	mm4,	mm3
+// 		movq	mm2,	mm0
+// 		movq	mm3,	mm4
+// 		pand	mm2,	packed_sign_ext
+// 		pand	mm3,	packed_sign_ext
+// 		pxor	mm2,	packed_adj_q
+// 		pxor	mm3,	packed_adj_q
+// 		pfadd	mm0,	mm2
+// 		pfadd	mm4,	mm3
 
-		movq	mm2,	mm1
-		movq	mm3,	mm5
-		pand	mm2,	packed_sign_ext
-		pand	mm3,	packed_sign_ext
-		pxor	mm2,	packed_adj_q
-		pxor	mm3,	packed_adj_q
-		pfadd	mm1,	mm2
-		pfadd	mm5,	mm3
+// 		movq	mm2,	mm1
+// 		movq	mm3,	mm5
+// 		pand	mm2,	packed_sign_ext
+// 		pand	mm3,	packed_sign_ext
+// 		pxor	mm2,	packed_adj_q
+// 		pxor	mm3,	packed_adj_q
+// 		pfadd	mm1,	mm2
+// 		pfadd	mm5,	mm3
 
-		pf2id	mm0,	mm0
-		pf2id	mm4,	mm4
-		pf2id	mm1,	mm1
-		pf2id	mm5,	mm5
-		movq	mm2,	mm0
-		movq	mm6,	mm4
-		movq	mm3,	mm1
-		movq	mm7,	mm5
-		prefetch	[edx + 64]
-		prefetch	[esi + 64]
-		punpckldq	mm2,	mm3
-		punpckldq	mm6,	mm7
-		punpckhdq	mm0,	mm1
-		punpckhdq	mm4,	mm5
-		packssdw	mm2,	mm0
-		packssdw	mm6,	mm4
-		movq	[edi],	mm2
-		movq	[edi+8],	mm6
+// 		pf2id	mm0,	mm0
+// 		pf2id	mm4,	mm4
+// 		pf2id	mm1,	mm1
+// 		pf2id	mm5,	mm5
+// 		movq	mm2,	mm0
+// 		movq	mm6,	mm4
+// 		movq	mm3,	mm1
+// 		movq	mm7,	mm5
+// 		prefetch	[edx + 64]
+// 		prefetch	[esi + 64]
+// 		punpckldq	mm2,	mm3
+// 		punpckldq	mm6,	mm7
+// 		punpckhdq	mm0,	mm1
+// 		punpckhdq	mm4,	mm5
+// 		packssdw	mm2,	mm0
+// 		packssdw	mm6,	mm4
+// 		movq	[edi],	mm2
+// 		movq	[edi+8],	mm6
 
 
-		movq	mm0,	[edx+16]
-		movq	mm4,	[edx+24]
-		movq	mm1,	[esi+16-32]
-		movq	mm5,	[esi+24-32]
+// 		movq	mm0,	[edx+16]
+// 		movq	mm4,	[edx+24]
+// 		movq	mm1,	[esi+16-32]
+// 		movq	mm5,	[esi+24-32]
 
-		movq	mm2,	mm0
-		movq	mm3,	mm4
-		pand	mm2,	packed_sign_ext
-		pand	mm3,	packed_sign_ext
-		pxor	mm2,	packed_adj_q
-		pxor	mm3,	packed_adj_q
-		pfadd	mm0,	mm2
-		pfadd	mm4,	mm3
+// 		movq	mm2,	mm0
+// 		movq	mm3,	mm4
+// 		pand	mm2,	packed_sign_ext
+// 		pand	mm3,	packed_sign_ext
+// 		pxor	mm2,	packed_adj_q
+// 		pxor	mm3,	packed_adj_q
+// 		pfadd	mm0,	mm2
+// 		pfadd	mm4,	mm3
 
-		movq	mm2,	mm1
-		movq	mm3,	mm5
-		pand	mm2,	packed_sign_ext
-		pand	mm3,	packed_sign_ext
-		pxor	mm2,	packed_adj_q
-		pxor	mm3,	packed_adj_q
-		pfadd	mm1,	mm2
-		pfadd	mm5,	mm3
+// 		movq	mm2,	mm1
+// 		movq	mm3,	mm5
+// 		pand	mm2,	packed_sign_ext
+// 		pand	mm3,	packed_sign_ext
+// 		pxor	mm2,	packed_adj_q
+// 		pxor	mm3,	packed_adj_q
+// 		pfadd	mm1,	mm2
+// 		pfadd	mm5,	mm3
 
-		pf2id	mm0,	mm0
-		pf2id	mm4,	mm4
-		pf2id	mm1,	mm1
-		pf2id	mm5,	mm5
-		movq	mm2,	mm0
-		movq	mm6,	mm4
-		movq	mm3,	mm1
-		movq	mm7,	mm5
+// 		pf2id	mm0,	mm0
+// 		pf2id	mm4,	mm4
+// 		pf2id	mm1,	mm1
+// 		pf2id	mm5,	mm5
+// 		movq	mm2,	mm0
+// 		movq	mm6,	mm4
+// 		movq	mm3,	mm1
+// 		movq	mm7,	mm5
 
-		add edx, 32 // pcm[0]
-		add edi, 32 // output
+// 		add edx, 32 // pcm[0]
+// 		add edi, 32 // output
 
-		punpckldq	mm2,	mm3
-		punpckldq	mm6,	mm7
-		punpckhdq	mm0,	mm1
-		punpckhdq	mm4,	mm5
-		cmp edi, ecx
-		packssdw	mm2,	mm0
-		packssdw	mm6,	mm4
-		movq	[edi+16-32],	mm2
-		movq	[edi+24-32],	mm6
+// 		punpckldq	mm2,	mm3
+// 		punpckldq	mm6,	mm7
+// 		punpckhdq	mm0,	mm1
+// 		punpckhdq	mm4,	mm5
+// 		cmp edi, ecx
+// 		packssdw	mm2,	mm0
+// 		packssdw	mm6,	mm4
+// 		movq	[edi+16-32],	mm2
+// 		movq	[edi+24-32],	mm6
 
-		jl loop0
-exit0:
-		femms
-		sub edi, output
-		shr edi, 2
-		mov eax, edi
-	}
-}
-static int float_to_pcm_stereo_sse(float **pcm, short int *output, int samples)
-{
-	_asm
-	{
-		mov eax, pcm
-		mov edx, [eax]
-		mov esi, [eax + 4]
-		mov ecx, samples
-		mov edi, output
-		shl	ecx, 2
-		add ecx, edi
-		cmp edi, ecx
-		jnl exit0
+// 		jl loop0
+// exit0:
+// 		femms
+// 		sub edi, output
+// 		shr edi, 2
+// 		mov eax, edi
+// 	}
+// }
+// static int float_to_pcm_stereo_sse(float **pcm, short int *output, int samples)
+// {
+// 	_asm
+// 	{
+// 		mov eax, pcm
+// 		mov edx, [eax]
+// 		mov esi, [eax + 4]
+// 		mov ecx, samples
+// 		mov edi, output
+// 		shl	ecx, 2
+// 		add ecx, edi
+// 		cmp edi, ecx
+// 		jnl exit0
 
-		align 16
-loop0:
-		cvtps2pi mm0, [esi]
-		add edi, 32
-		cvtps2pi mm4, [esi + 8]
-		cvtps2pi mm1, [edx]
-		cvtps2pi mm3, [edx + 8]
-		movq mm2, mm1
-		movq mm5, mm3
-		prefetcht0		[esi + 64]
-		punpckldq mm2, mm0
-		cvtps2pi mm7, [esi + 16]
-		punpckldq mm5, mm4
-		cvtps2pi mm6, [edx + 16]
-		punpckhdq mm1, mm0
-		add esi, 32
-		punpckhdq mm3, mm4
-		prefetcht0		[edx + 64]
-		packssdw mm2, mm1
-		movq mm4, mm6
-		packssdw mm5, mm3
-		movq [edi - 32], mm2
-		punpckldq mm4, mm7
-		movq [edi + 8 - 32], mm5
-		punpckhdq mm6, mm7
-		cvtps2pi mm3, [edx + 24]
-		packssdw mm4, mm6
-		cvtps2pi mm1, [esi + 24 - 32]
-		movq mm5, mm3
-		add edx, 32
-		punpckldq mm5, mm1
-		movq [edi + 16 - 32], mm4
-		punpckhdq mm3, mm1
-		cmp edi, ecx
-		packssdw mm5, mm3
-		movq [edi + 24 - 32], mm5
+// 		align 16
+// loop0:
+// 		cvtps2pi mm0, [esi]
+// 		add edi, 32
+// 		cvtps2pi mm4, [esi + 8]
+// 		cvtps2pi mm1, [edx]
+// 		cvtps2pi mm3, [edx + 8]
+// 		movq mm2, mm1
+// 		movq mm5, mm3
+// 		prefetcht0		[esi + 64]
+// 		punpckldq mm2, mm0
+// 		cvtps2pi mm7, [esi + 16]
+// 		punpckldq mm5, mm4
+// 		cvtps2pi mm6, [edx + 16]
+// 		punpckhdq mm1, mm0
+// 		add esi, 32
+// 		punpckhdq mm3, mm4
+// 		prefetcht0		[edx + 64]
+// 		packssdw mm2, mm1
+// 		movq mm4, mm6
+// 		packssdw mm5, mm3
+// 		movq [edi - 32], mm2
+// 		punpckldq mm4, mm7
+// 		movq [edi + 8 - 32], mm5
+// 		punpckhdq mm6, mm7
+// 		cvtps2pi mm3, [edx + 24]
+// 		packssdw mm4, mm6
+// 		cvtps2pi mm1, [esi + 24 - 32]
+// 		movq mm5, mm3
+// 		add edx, 32
+// 		punpckldq mm5, mm1
+// 		movq [edi + 16 - 32], mm4
+// 		punpckhdq mm3, mm1
+// 		cmp edi, ecx
+// 		packssdw mm5, mm3
+// 		movq [edi + 24 - 32], mm5
 
-		jl loop0
-exit0:
-		emms
-		sub edi, output
-		shr edi, 2
-		mov eax, edi
-	}
-}
+// 		jl loop0
+// exit0:
+// 		emms
+// 		sub edi, output
+// 		shr edi, 2
+// 		mov eax, edi
+// 	}
+// }
 
 static void float_to_pcm(float **pcm, short int *output, int samples, int chans)
 {
 	vorbis_fpu_control fpu;
 	vorbis_fpu_setround(&fpu);
 	if(!samples) return;
-	if(chans != 2)
-	{
+	// if(chans != 2)
+	// {
 		int i;
 		for(i=0;i<chans;i++) { /* It's faster in this order */
 		  float *src=pcm[i];
@@ -1754,57 +1754,57 @@ static void float_to_pcm(float **pcm, short int *output, int samples, int chans)
 			dest+=chans;
 		  }
 		}
-	}
-	else
-	{
+	// }
+	// else
+	// {
 		// special optimization for chans = 2
-		if(CPU_SSE && CPU_MMX)
-		{
-			int p;
-			int i;
-			samples -= 15;
-			p = float_to_pcm_stereo_sse(pcm, output, samples);
-			samples += 15;
+		// if(CPU_SSE && CPU_MMX)
+		// {
+		// 	int p;
+		// 	int i;
+		// 	samples -= 15;
+		// 	p = float_to_pcm_stereo_sse(pcm, output, samples);
+		// 	samples += 15;
 
-			for(i=0;i<chans;i++) { /* It's faster in this order */
-			  float *src=pcm[i];
-			  short *dest=output+i + p * chans;
-			  int j;
-			  int val;
-			  for(j=p;j<samples;j++) {
-				val=vorbis_ftoi(src[j]/**32768.f*/);
-				if(val>32767) *dest = (short int)32767;
-				else if(val<-32768) *dest = (short int)-32768;
-				else *dest=val;
-				dest+=chans;
-			  }
-			}
-		}
-		else if(CPU_3DN)
-		{
-			int p;
-			int i;
-			samples -= 15;
-			p = float_to_pcm_stereo_3dn(pcm, output, samples);
-			samples += 15;
+		// 	for(i=0;i<chans;i++) { /* It's faster in this order */
+		// 	  float *src=pcm[i];
+		// 	  short *dest=output+i + p * chans;
+		// 	  int j;
+		// 	  int val;
+		// 	  for(j=p;j<samples;j++) {
+		// 		val=vorbis_ftoi(src[j]/**32768.f*/);
+		// 		if(val>32767) *dest = (short int)32767;
+		// 		else if(val<-32768) *dest = (short int)-32768;
+		// 		else *dest=val;
+		// 		dest+=chans;
+		// 	  }
+		// 	}
+		// }
+		// else if(CPU_3DN)
+		// {
+		// 	int p;
+		// 	int i;
+		// 	samples -= 15;
+		// 	p = float_to_pcm_stereo_3dn(pcm, output, samples);
+		// 	samples += 15;
 
-			for(i=0;i<chans;i++) { /* It's faster in this order */
-			  float *src=pcm[i];
-			  short *dest=output+i + p * chans;
-			  int j;
-			  int val;
-			  for(j=p;j<samples;j++) {
-				val=vorbis_ftoi(src[j]/**32768.f*/);
-				if(val>32767) *dest = (short int)32767;
-				else if(val<-32768) *dest = (short int)-32768;
-				else *dest=val;
-				dest+=chans;
-			  }
-			}
-		}
-		else
-				float_to_pcm_stereo(pcm, output, samples);
-	}
+		// 	for(i=0;i<chans;i++) { /* It's faster in this order */
+		// 	  float *src=pcm[i];
+		// 	  short *dest=output+i + p * chans;
+		// 	  int j;
+		// 	  int val;
+		// 	  for(j=p;j<samples;j++) {
+		// 		val=vorbis_ftoi(src[j]/**32768.f*/);
+		// 		if(val>32767) *dest = (short int)32767;
+		// 		else if(val<-32768) *dest = (short int)-32768;
+		// 		else *dest=val;
+		// 		dest+=chans;
+		// 	  }
+		// 	}
+		// }
+		// else
+				// float_to_pcm_stereo(pcm, output, samples);
+	// }
 	vorbis_fpu_restore(fpu);
 }
 /* up to this point, everything could more or less hide the multiple

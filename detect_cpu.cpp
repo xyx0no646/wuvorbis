@@ -9,7 +9,9 @@
  * @note
  *****************************************************************************/
 
-
+#include <cstring>
+#include <windows.h>
+#include <x86intrin.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -253,19 +255,19 @@ tjs_uint32 TVPCheckCPU()
 	GetCPUName();
 
 	// OS Check
-#ifdef _MSC_VER
-	if( flags & (TVP_CPU_HAS_AVX|TVP_CPU_HAS_AVX2) ) {
-		__try {
-			// YMMレジスタ(AVX)はWindowsなら7 SP1以降
-			if( !__os_has_avx_support() ) {
-				flags &= ~(TVP_CPU_HAS_AVX|TVP_CPU_HAS_AVX2);
-			}
-		} __except(EXCEPTION_EXECUTE_HANDLER) {
-			// exception had been ocured
-			flags &= ~(TVP_CPU_HAS_AVX|TVP_CPU_HAS_AVX2);
-		} 
-	}
-#endif
+// #ifdef _MSC_VER
+// 	if( flags & (TVP_CPU_HAS_AVX|TVP_CPU_HAS_AVX2) ) {
+// 		__try {
+// 			// YMMレジスタ(AVX)はWindowsなら7 SP1以降
+// 			if( !__os_has_avx_support() ) {
+// 				flags &= ~(TVP_CPU_HAS_AVX|TVP_CPU_HAS_AVX2);
+// 			}
+// 		} __except(EXCEPTION_EXECUTE_HANDLER) {
+// 			// exception had been ocured
+// 			flags &= ~(TVP_CPU_HAS_AVX|TVP_CPU_HAS_AVX2);
+// 		} 
+// 	}
+// #endif
 
 	TVPCPUFeatures = flags | vendor;
 	return flags;

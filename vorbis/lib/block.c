@@ -685,146 +685,146 @@ int vorbis_synthesis_restart(vorbis_dsp_state *v){
 }
 
 
-void vorbis_apply_window_3dn(float *pcm, float *w1, float *w2, float *p, float *pcmlim)
-{
-	_asm
-	{
-		push ebx
-		mov edi, pcm
-		mov	ebx, w1
-		mov esi, w2
-		mov edx, p
-		mov ecx, pcmlim
-		cmp edi, ecx
-		jnl p3dexit1
+// void vorbis_apply_window_3dn(float *pcm, float *w1, float *w2, float *p, float *pcmlim)
+// {
+// 	_asm
+// 	{
+// 		push ebx
+// 		mov edi, pcm
+// 		mov	ebx, w1
+// 		mov esi, w2
+// 		mov edx, p
+// 		mov ecx, pcmlim
+// 		cmp edi, ecx
+// 		jnl p3dexit1
 
-	p3dloop1:
-		add		esi,	4*4
-		movq			mm0,			[ebx - 2*4]			// load window backward
-		movq			mm3,			[ebx - 4*4]			// load window backward
-		punpckldq		mm1,			mm0					//
-		punpckldq		mm4,			mm3					//
-		punpckhdq		mm0,			mm1					// swap hi-order dword and low-order dword of mm0
-		punpckhdq		mm3,			mm4					// swap hi-order dword and low-order dword of mm3
-		pfmul			mm0,			[edi]				// multiply pcm
-		pfmul			mm3,			[edi+2*4]			// multiply pcm
-		movq			mm2,			[esi-4*4]			// load window forward
-		movq			mm5,			[esi+2*4-4*4]		// load window forward
-		pfmul			mm2,			[edx]				// multiply p
-		pfmul			mm5,			[edx+2*4]			// multiply p
-		pfadd			mm0,			mm2					// add
-		pfadd			mm3,			mm5					// add
-		movq			[edi],			mm0					// store
-		movq			[edi+2*4],		mm3					// store
+// 	p3dloop1:
+// 		add		esi,	4*4
+// 		movq			mm0,			[ebx - 2*4]			// load window backward
+// 		movq			mm3,			[ebx - 4*4]			// load window backward
+// 		punpckldq		mm1,			mm0					//
+// 		punpckldq		mm4,			mm3					//
+// 		punpckhdq		mm0,			mm1					// swap hi-order dword and low-order dword of mm0
+// 		punpckhdq		mm3,			mm4					// swap hi-order dword and low-order dword of mm3
+// 		pfmul			mm0,			[edi]				// multiply pcm
+// 		pfmul			mm3,			[edi+2*4]			// multiply pcm
+// 		movq			mm2,			[esi-4*4]			// load window forward
+// 		movq			mm5,			[esi+2*4-4*4]		// load window forward
+// 		pfmul			mm2,			[edx]				// multiply p
+// 		pfmul			mm5,			[edx+2*4]			// multiply p
+// 		pfadd			mm0,			mm2					// add
+// 		pfadd			mm3,			mm5					// add
+// 		movq			[edi],			mm0					// store
+// 		movq			[edi+2*4],		mm3					// store
 
-		add		edx,	4*4
-		add		edi,	4*4
-		sub		ebx,	4*4
+// 		add		edx,	4*4
+// 		add		edi,	4*4
+// 		sub		ebx,	4*4
 
-		cmp edi, ecx
-		jl	p3dloop1
+// 		cmp edi, ecx
+// 		jl	p3dloop1
 
-	p3dexit1:
-		pop ebx
-		femms
-	}
-}
+// 	p3dexit1:
+// 		pop ebx
+// 		femms
+// 	}
+// }
 
-void vorbis_apply_window_sse(float *pcm, float *w1, float *w2, float *p, float *pcmlim)
-{
-	// p and pcm must be alingned
-	_asm
-	{
-		push ebx
-		mov edi, pcm
-		mov	ebx, w1
-		mov esi, w2
-		mov edx, p
-		mov ecx, pcmlim
-		cmp edi, ecx
-		jnl pexit1
+// void vorbis_apply_window_sse(float *pcm, float *w1, float *w2, float *p, float *pcmlim)
+// {
+// 	// p and pcm must be alingned
+// 	_asm
+// 	{
+// 		push ebx
+// 		mov edi, pcm
+// 		mov	ebx, w1
+// 		mov esi, w2
+// 		mov edx, p
+// 		mov ecx, pcmlim
+// 		cmp edi, ecx
+// 		jnl pexit1
 
-		sub		ebx,	4*4
-		align 16
-	ploop1:
+// 		sub		ebx,	4*4
+// 		align 16
+// 	ploop1:
 
-		movaps	xmm0,	[ebx]
-		add		esi,	8*4
-		movaps	xmm3,	[ebx - 4*4]
-		shufps	xmm0,	xmm0,	0*64+1*16+2*4+3
-		shufps	xmm3,	xmm3,	0*64+1*16+2*4+3
-		mulps	xmm0,	[edi]
-		mulps	xmm3,	[edi + 4*4]
-		movaps	xmm1,	[esi - 8*4]
-		add		edx,	8*4
-		movaps	xmm4,	[esi + 4*4 - 8*4]
-		add		edi,	8*4
-		mulps	xmm1,	[edx - 8*4]
-		sub		ebx,	8*4
-		mulps	xmm4,	[edx + 4*4 - 8*4]
-		cmp edi, ecx
-		addps	xmm0,	xmm1
-		addps	xmm3,	xmm4
-		movaps	[edi - 8*4],	xmm0
-		movaps	[edi + 4*4 - 8*4],	xmm3
+// 		movaps	xmm0,	[ebx]
+// 		add		esi,	8*4
+// 		movaps	xmm3,	[ebx - 4*4]
+// 		shufps	xmm0,	xmm0,	0*64+1*16+2*4+3
+// 		shufps	xmm3,	xmm3,	0*64+1*16+2*4+3
+// 		mulps	xmm0,	[edi]
+// 		mulps	xmm3,	[edi + 4*4]
+// 		movaps	xmm1,	[esi - 8*4]
+// 		add		edx,	8*4
+// 		movaps	xmm4,	[esi + 4*4 - 8*4]
+// 		add		edi,	8*4
+// 		mulps	xmm1,	[edx - 8*4]
+// 		sub		ebx,	8*4
+// 		mulps	xmm4,	[edx + 4*4 - 8*4]
+// 		cmp edi, ecx
+// 		addps	xmm0,	xmm1
+// 		addps	xmm3,	xmm4
+// 		movaps	[edi - 8*4],	xmm0
+// 		movaps	[edi + 4*4 - 8*4],	xmm3
 
-		prefetcht0	[edi + 64]
+// 		prefetcht0	[edi + 64]
 
-		jl	ploop1
+// 		jl	ploop1
 
-	pexit1:
-		pop ebx
-	}
-}
-void vorbis_apply_window_sse_ua(float *pcm, float *w1, float *w2, float *p, float *pcmlim)
-{
-	// unaligned version
-	_asm
-	{
-		push ebx
-		mov edi, pcm
-		mov	ebx, w1
-		mov esi, w2
-		mov edx, p
-		mov ecx, pcmlim
-		cmp edi, ecx
-		jnl pexit1
+// 	pexit1:
+// 		pop ebx
+// 	}
+// }
+// void vorbis_apply_window_sse_ua(float *pcm, float *w1, float *w2, float *p, float *pcmlim)
+// {
+// 	// unaligned version
+// 	_asm
+// 	{
+// 		push ebx
+// 		mov edi, pcm
+// 		mov	ebx, w1
+// 		mov esi, w2
+// 		mov edx, p
+// 		mov ecx, pcmlim
+// 		cmp edi, ecx
+// 		jnl pexit1
 
-		align 16
-	ploop1:
+// 		align 16
+// 	ploop1:
 
-		movups	xmm0,	[ebx - 4*4]
-		movups	xmm3,	[ebx - 4*4 - 4*4]
-		shufps	xmm0,	xmm0,	0*64+1*16+2*4+3
-		shufps	xmm3,	xmm3,	0*64+1*16+2*4+3
-		movups	xmm2,	[edi]
-		movups	xmm5,	[edi + 4*4]
-		mulps	xmm0,	xmm2
-		mulps	xmm3,	xmm5
-		movups	xmm1,	[esi]
-		movups	xmm4,	[esi + 4*4]
-		movups	xmm2,	[edx]
-		movups	xmm5,	[edx + 4*4]
-		mulps	xmm1,	xmm2
-		mulps	xmm4,	xmm5
-		prefetcht0	[edx + 32]
-		addps	xmm0,	xmm1
-		addps	xmm3,	xmm4
-		movups	[edi],	xmm0
-		movups	[edi + 4*4],	xmm3
+// 		movups	xmm0,	[ebx - 4*4]
+// 		movups	xmm3,	[ebx - 4*4 - 4*4]
+// 		shufps	xmm0,	xmm0,	0*64+1*16+2*4+3
+// 		shufps	xmm3,	xmm3,	0*64+1*16+2*4+3
+// 		movups	xmm2,	[edi]
+// 		movups	xmm5,	[edi + 4*4]
+// 		mulps	xmm0,	xmm2
+// 		mulps	xmm3,	xmm5
+// 		movups	xmm1,	[esi]
+// 		movups	xmm4,	[esi + 4*4]
+// 		movups	xmm2,	[edx]
+// 		movups	xmm5,	[edx + 4*4]
+// 		mulps	xmm1,	xmm2
+// 		mulps	xmm4,	xmm5
+// 		prefetcht0	[edx + 32]
+// 		addps	xmm0,	xmm1
+// 		addps	xmm3,	xmm4
+// 		movups	[edi],	xmm0
+// 		movups	[edi + 4*4],	xmm3
 
-		add		edi,	8*4
-		sub		ebx,	8*4
-		add		esi,	8*4
-		add		edx,	8*4
+// 		add		edi,	8*4
+// 		sub		ebx,	8*4
+// 		add		esi,	8*4
+// 		add		edx,	8*4
 
-		cmp edi, ecx
-		jl	ploop1
+// 		cmp edi, ecx
+// 		jl	ploop1
 
-	pexit1:
-		pop ebx
-	}
-}
+// 	pexit1:
+// 		pop ebx
+// 	}
+// }
 extern int CPU_SSE;
 extern int CPU_3DN;
 
@@ -896,18 +896,18 @@ int vorbis_synthesis_blockin(vorbis_dsp_state *v,vorbis_block *vb){
 	  float *w=_vorbis_window_get(b->window[1]-hs);
 	  float *pcm=v->pcm[j]+prevCenter;
 	  float *p=vb->pcm[j];
-	  if(CPU_SSE && !(n1 & 0x0f) )
-	  {
-		if(! ( ((long)pcm | (long)p) & 0x0f ) )
-			vorbis_apply_window_sse(pcm, w+n1, w, p, pcm + n1);
-		else
-			vorbis_apply_window_sse_ua(pcm, w+n1, w, p, pcm + n1);
-	  }
-	  else if(CPU_3DN && !(n1 & 0x0f) )
-	  {
-		vorbis_apply_window_3dn(pcm, w+n1, w, p, pcm + n1);
-	  }
-	  else
+	 //  if(CPU_SSE && !(n1 & 0x0f) )
+	 //  {
+		// if(! ( ((long)pcm | (long)p) & 0x0f ) )
+		// 	vorbis_apply_window_sse(pcm, w+n1, w, p, pcm + n1);
+		// else
+		// 	vorbis_apply_window_sse_ua(pcm, w+n1, w, p, pcm + n1);
+	 //  }
+	 //  else if(CPU_3DN && !(n1 & 0x0f) )
+	 //  {
+		// vorbis_apply_window_3dn(pcm, w+n1, w, p, pcm + n1);
+	 //  }
+	 //  else
 	  {
 		  i=0;
 		  n1 -= 3;
@@ -927,18 +927,18 @@ int vorbis_synthesis_blockin(vorbis_dsp_state *v,vorbis_block *vb){
 	  float *w=_vorbis_window_get(b->window[0]-hs);
 	  float *pcm=v->pcm[j]+prevCenter+n1/2-n0/2;
 	  float *p=vb->pcm[j];
-	  if(CPU_SSE && !(n0 & 0x0f) )
-	  {
-		if(! ( ((long)pcm | (long)p) & 0x0f ) )
-			vorbis_apply_window_sse(pcm, w+n0, w, p, pcm + n0);
-		else
-			vorbis_apply_window_sse_ua(pcm, w+n0, w, p, pcm + n0);
-	  }
-	  else if(CPU_3DN && !(n0 & 0x0f) )
-	  {
-		vorbis_apply_window_3dn(pcm, w+n0, w, p, pcm + n0);
-	  }
-	  else
+	 //  if(CPU_SSE && !(n0 & 0x0f) )
+	 //  {
+		// if(! ( ((long)pcm | (long)p) & 0x0f ) )
+		// 	vorbis_apply_window_sse(pcm, w+n0, w, p, pcm + n0);
+		// else
+		// 	vorbis_apply_window_sse_ua(pcm, w+n0, w, p, pcm + n0);
+	 //  }
+	 //  else if(CPU_3DN && !(n0 & 0x0f) )
+	 //  {
+		// vorbis_apply_window_3dn(pcm, w+n0, w, p, pcm + n0);
+	 //  }
+	 //  else
 	  {
 		  i=0;
 		  n0 -= 3;
@@ -960,20 +960,20 @@ int vorbis_synthesis_blockin(vorbis_dsp_state *v,vorbis_block *vb){
 	  float *w=_vorbis_window_get(b->window[0]-hs);
 	  float *pcm=v->pcm[j]+prevCenter;
 	  float *p=vb->pcm[j]+n1/2-n0/2;
-	  if(CPU_SSE && !(n0 & 0x0f) )
-	  {
-		if(! ( ((long)pcm | (long)p) & 0x0f ) )
-			vorbis_apply_window_sse(pcm, w+n0, w, p, pcm + n0);
-		else
-			vorbis_apply_window_sse_ua(pcm, w+n0, w, p, pcm + n0);
-		i = n0;
-	  }
-	  else if(CPU_3DN && !(n0 & 0x0f) )
-	  {
-		vorbis_apply_window_3dn(pcm, w+n0, w, p, pcm + n0);
-		i = n0;
-	  }
-	  else
+	 //  if(CPU_SSE && !(n0 & 0x0f) )
+	 //  {
+		// if(! ( ((long)pcm | (long)p) & 0x0f ) )
+		// 	vorbis_apply_window_sse(pcm, w+n0, w, p, pcm + n0);
+		// else
+		// 	vorbis_apply_window_sse_ua(pcm, w+n0, w, p, pcm + n0);
+		// i = n0;
+	 //  }
+	 //  else if(CPU_3DN && !(n0 & 0x0f) )
+	 //  {
+		// vorbis_apply_window_3dn(pcm, w+n0, w, p, pcm + n0);
+		// i = n0;
+	 //  }
+	 //  else
 	  {
 		  i=0;
 		  n0 -= 3;
@@ -995,18 +995,18 @@ int vorbis_synthesis_blockin(vorbis_dsp_state *v,vorbis_block *vb){
 	  float *w=_vorbis_window_get(b->window[0]-hs);
 	  float *pcm=v->pcm[j]+prevCenter;
 	  float *p=vb->pcm[j];
-	  if(CPU_SSE && !(n0 & 0x0f) )
-	  {
-		if(! ( ((long)pcm | (long)p) & 0x0f ) )
-			vorbis_apply_window_sse(pcm, w+n0, w, p, pcm + n0);
-		else
-			vorbis_apply_window_sse_ua(pcm, w+n0, w, p, pcm + n0);
-	  }
-	  else if(CPU_3DN && !(n0 & 0x0f) )
-	  {
-			vorbis_apply_window_3dn(pcm, w+n0, w, p, pcm + n0);
-	  }
-	  else
+	 //  if(CPU_SSE && !(n0 & 0x0f) )
+	 //  {
+		// if(! ( ((long)pcm | (long)p) & 0x0f ) )
+		// 	vorbis_apply_window_sse(pcm, w+n0, w, p, pcm + n0);
+		// else
+		// 	vorbis_apply_window_sse_ua(pcm, w+n0, w, p, pcm + n0);
+	 //  }
+	 //  else if(CPU_3DN && !(n0 & 0x0f) )
+	 //  {
+		// 	vorbis_apply_window_3dn(pcm, w+n0, w, p, pcm + n0);
+	 //  }
+	 //  else
 	  {
 		  i=0;
 		  n0 -= 3;

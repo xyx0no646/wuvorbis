@@ -291,31 +291,31 @@ int vorbis_book_encodev(codebook *book,int best,float *a,oggpack_buffer *b){
 }
 
 /* oggpack_look and oggpack_adv: copied from bitwise.c to do inline */
-STIN long oggpack_look(oggpack_buffer *b,int bits){
-  unsigned long ret;
-  unsigned long m= (bits==32)?-1:((1<<bits)-1); /*mask[bits]*/
+//  long oggpack_look(oggpack_buffer *b,int bits){
+//   unsigned long ret;
+//   unsigned long m= (bits==32)?-1:((1<<bits)-1); /*mask[bits]*/
 
-  bits+=b->endbit;
+//   bits+=b->endbit;
 
-  if(b->endbyte+4>=b->storage){
-    /* not the main path */
-    if(b->endbyte*8+bits>b->storage*8)return(-1);
-  }
+//   if(b->endbyte+4>=b->storage){
+//     /* not the main path */
+//     if(b->endbyte*8+bits>b->storage*8)return(-1);
+//   }
 
-  ret = *(ogg_uint32_t*)(b->ptr) >> b->endbit;
+//   ret = *(ogg_uint32_t*)(b->ptr) >> b->endbit;
 
-  if(bits>32 && b->endbit)
-	  ret|=b->ptr[4]<<(32-b->endbit);
+//   if(bits>32 && b->endbit)
+// 	  ret|=b->ptr[4]<<(32-b->endbit);
 
-  return(m&ret);
-}
+//   return(m&ret);
+// }
 
-STIN void oggpack_adv(oggpack_buffer *b,int bits){
-  bits+=b->endbit;
-  b->ptr+=bits>>3;
-  b->endbyte+=bits>>3;
-  b->endbit=bits&7;
-}
+//  void oggpack_adv(oggpack_buffer *b,int bits){
+//   bits+=b->endbit;
+//   b->ptr+=bits>>3;
+//   b->endbyte+=bits>>3;
+//   b->endbit=bits&7;
+// }
 
 /* the 'eliminate the decode tree' optimization actually requires the
    codewords to be MSb first, not LSb.  This is an annoying inelegancy
@@ -324,7 +324,7 @@ STIN void oggpack_adv(oggpack_buffer *b,int bits){
    to an MSb bitpacker), but not actually the huge hit it appears to
    be.  The first-stage decode table catches most words so that
    bitreverse is not in the main execution path. */
-/*
+
 STIN ogg_uint32_t bitreverse(ogg_uint32_t x){
   x=    ((x>>16)&0x0000ffff) | ((x<<16)&0xffff0000);
   x=    ((x>> 8)&0x00ff00ff) | ((x<< 8)&0xff00ff00);
@@ -332,33 +332,33 @@ STIN ogg_uint32_t bitreverse(ogg_uint32_t x){
   x=    ((x>> 2)&0x33333333) | ((x<< 2)&0xcccccccc);
   return((x>> 1)&0x55555555) | ((x<< 1)&0xaaaaaaaa);
 }
-*/
 
-STIN ogg_uint32_t bitreverse(ogg_uint32_t x){
-	_asm
-	{
-		mov		eax,	x
-		bswap	eax
-		mov		edx,	eax
-		shl		edx,	4
-		shr		eax,	4
-		and		edx,	0xf0f0f0f0
-		and		eax,	0x0f0f0f0f
-		or		eax,	edx
-		mov		edx,	eax
-		shl		edx,	2
-		shr		eax,	2
-		and		edx,	0xcccccccc
-		and		eax,	0x33333333
-		or		eax,	edx
-		mov		edx,	eax
-		shl		edx,	1
-		shr		eax,	1
-		and		edx,	0xaaaaaaaa
-		and		eax,	0x55555555
-		or		eax,	edx
-	}
-}
+
+// STIN ogg_uint32_t bitreverse(ogg_uint32_t x){
+// 	_asm
+// 	{
+// 		mov		eax,	x
+// 		bswap	eax
+// 		mov		edx,	eax
+// 		shl		edx,	4
+// 		shr		eax,	4
+// 		and		edx,	0xf0f0f0f0
+// 		and		eax,	0x0f0f0f0f
+// 		or		eax,	edx
+// 		mov		edx,	eax
+// 		shl		edx,	2
+// 		shr		eax,	2
+// 		and		edx,	0xcccccccc
+// 		and		eax,	0x33333333
+// 		or		eax,	edx
+// 		mov		edx,	eax
+// 		shl		edx,	1
+// 		shr		eax,	1
+// 		and		edx,	0xaaaaaaaa
+// 		and		eax,	0x55555555
+// 		or		eax,	edx
+// 	}
+// }
 
 
 STIN long decode_packed_entry_number(codebook *book, oggpack_buffer *b){
