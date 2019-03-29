@@ -17,7 +17,8 @@ extern "C" {
 #ifndef NOT_HAVE_TP_STUB
 #include "tp_stub.h"
 #endif
-#pragma hdrstop
+
+#define EXPORT(hr) extern "C" __declspec(dllexport) hr __stdcall
 
 #include "tvpsnd.h" // TSS sound system interface definitions
 
@@ -540,7 +541,7 @@ extern "C"
 	void scale_FROMdB2_LOOKUP(float fac) ;
 }
 //---------------------------------------------------------------------------
-HRESULT _stdcall GetModuleInstance(ITSSModule **out, ITSSStorageProvider *provider,
+EXPORT(HRESULT) GetModuleInstance(ITSSModule **out, ITSSStorageProvider *provider,
 	IStream * config, HWND mainwin)
 {
 	// GetModuleInstance function (exported)
@@ -559,8 +560,9 @@ static void InternalSetCPUType(tjs_uint32 cputype)
 	if(CPU_SSE && CPU_3DN) CPU_SSE = 0; // Athlon XP; 3DNow! is faster than SSE on this decoder.
 }
 //---------------------------------------------------------------------------
-extern "C" __declspec(dllexport) HRESULT _stdcall V2Link(iTVPFunctionExporter *exporter)
+EXPORT(HRESULT) V2Link(iTVPFunctionExporter *exporter)
 {
+	fprintf(stderr, "WUVorbis Got V2Link!!\n");
 #ifndef NOT_HAVE_TP_STUB
 	// exported function, only called by kirikiri ver 2+
 	TVPAlive = true;
@@ -637,7 +639,7 @@ extern "C" __declspec(dllexport) HRESULT _stdcall V2Link(iTVPFunctionExporter *e
 	return S_OK;
 }
 //---------------------------------------------------------------------------
-extern "C" __declspec(dllexport) HRESULT _stdcall V2Unlink()
+EXPORT(HRESULT) V2Unlink()
 {
 #ifndef NOT_HAVE_TP_STUB
 	TVPUninitImportStub();
@@ -735,7 +737,7 @@ void * dee_ogg_alloca(size_t bytes)
 //---------------------------------------------------------------------------
 // ##########################################################################
 //---------------------------------------------------------------------------
-extern "C" __declspec(dllexport) int _stdcall Query_sizeof_OggVorbis_File()
+EXPORT(int) Query_sizeof_OggVorbis_File()
 {
 	// returns sizeof(OggVorbis_File)
 	return sizeof(OggVorbis_File);
