@@ -176,7 +176,6 @@ public:
 		{
 			// error; stream may not be a vorbis stream
 			delete decoder;
-			stream->Release();
 			return nullptr;
 		}
 
@@ -476,8 +475,11 @@ bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
 	if(ov_open_callbacks(this, &InputFile, NULL, 0, callbacks) < 0)
 	{
 		// error!
-		InputStream->Release();
-		InputStream = NULL;
+		if (InputStream)
+		{
+			InputStream->Release();
+			InputStream = NULL;
+		}
 		return false;
 	}
 
@@ -488,6 +490,11 @@ bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
 	vi = ov_info(&InputFile, -1);
 	if(!vi)
 	{
+		if (InputStream)
+		{
+			InputStream->Release();
+			InputStream = NULL;
+		}
 		return false;
 	}
 
