@@ -465,7 +465,9 @@ bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
 {
 	// set input stream
 	InputStream = stream;
+#if 0
 	InputStream->AddRef(); // add-ref
+#endif
 
 	ov_callbacks callbacks = {read_func, seek_func, close_func, tell_func};
 		// callback functions
