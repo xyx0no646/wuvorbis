@@ -18,7 +18,7 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 
-#include "ncbind/ncbind.hpp"
+#include "tp_stub.h"
 #include "WaveIntf.h"
 #include "istream_compat.h"
 
@@ -665,16 +665,59 @@ extern "C"
 
 
 static VorbisWaveDecoderCreator wuvorbis_creator;
-static void wuvorbis_init()
+
+
+//---------------------------------------------------------------------------
+// tTJSNC_WuvorbisInternal : wuvorbis internal class
+//---------------------------------------------------------------------------
+class tTJSNC_WuvorbisInternal : public tTJSNativeClass
+{
+public:
+	tTJSNC_WuvorbisInternal();
+
+	static tjs_uint32 ClassID;
+
+protected:
+	tTJSNativeInstance * CreateNativeInstance();
+};
+
+//---------------------------------------------------------------------------
+// tTJSNC_WuvorbisInternal
+//---------------------------------------------------------------------------
+tjs_uint32 tTJSNC_WuvorbisInternal::ClassID = -1;
+tTJSNC_WuvorbisInternal::tTJSNC_WuvorbisInternal() : tTJSNativeClass(TJS_W("WuvorbisInternal"))
+{
+	TJS_BEGIN_NATIVE_MEMBERS(WuvorbisInternal)
+	TJS_DECL_EMPTY_FINALIZE_METHOD
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_CONSTRUCTOR_DECL_NO_INSTANCE(/*TJS class name*/WuvorbisInternal)
+{
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_CONSTRUCTOR_DECL(/*TJS class name*/WuvorbisInternal)
+//----------------------------------------------------------------------
+
+//----------------------------------------------------------------------
+	TJS_END_NATIVE_MEMBERS
+
+} // end of tTJSNC_WuvorbisInternal::tTJSNC_WuvorbisInternal
+//---------------------------------------------------------------------------
+tTJSNativeInstance *tTJSNC_WuvorbisInternal::CreateNativeInstance()
+{
+	return NULL;
+}
+static iTJSDispatch2 * TVPCreateNativeClass_WuvorbisInternal(iTJSDispatch2* global)
 {
 	TVPAlive = true;
 	TVPRegisterWaveDecoderCreator(&wuvorbis_creator);
 
 	Look_Replay_Gain = true; // whether to look replay gain information
 	Use_Album_Gain = false; // whether to use album gain, otherwise use track gain
+	iTJSDispatch2 *cls = new tTJSNC_WuvorbisInternal();
+	return cls;
 }
 
-NCB_PRE_REGIST_CALLBACK(wuvorbis_init);
+static tTVPAtInstallClass TVPInstallClassWuvorbisInternal(TJS_W("WuvorbisInternal"), TVPCreateNativeClass_WuvorbisInternal, TJS_W(""));
 
 #if 0
 //---------------------------------------------------------------------------
