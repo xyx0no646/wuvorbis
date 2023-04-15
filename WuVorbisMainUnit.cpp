@@ -22,9 +22,6 @@ extern "C" {
 
 #include "tp_stub.h"
 #include "WaveIntf.h"
-#ifndef _WIN32
-#include "istream_compat.h"
-#endif
 
 #if 0
 #ifndef NOT_HAVE_TP_STUB
