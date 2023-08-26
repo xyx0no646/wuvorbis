@@ -1,0 +1,3 @@
+x64/ogg/src/bitwise.c
+x64/ogg/src/cpu.c
+x64/ogg/src/framing.c
