@@ -68,7 +68,7 @@ int WINAPI DllEntryPoint(HINSTANCE hinst, unsigned long reason, void* lpReserved
 #endif
 #endif
 //---------------------------------------------------------------------------
-void strcpy_limit(TSS_LPWSTR dest, const TSS_LPWSTR  src, int n)
+static void strcpy_limit(TSS_LPWSTR dest, const TSS_LPWSTR  src, int n)
 {
 	// string copy with limitation
 	// this will add a null terminater at destination buffer
@@ -76,7 +76,7 @@ void strcpy_limit(TSS_LPWSTR dest, const TSS_LPWSTR  src, int n)
 	dest[n-1] = '\0';
 }
 //---------------------------------------------------------------------------
-ITSSStorageProvider *StorageProvider = NULL;
+static ITSSStorageProvider *StorageProvider = NULL;
 //---------------------------------------------------------------------------
 class VorbisModule : public ITSSModule // module interface
 {
