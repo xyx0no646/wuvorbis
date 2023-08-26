@@ -32,7 +32,7 @@ extern "C" {
 #define EXPORT(hr) extern "C" __attribute__((visibility ("default"))) hr
 #endif
 #else
-#define EXPORT(hr) static hr
+#define EXPORT(hr) static hr STDMETHODCALLTYPE
 #endif
 
 #ifdef _WIN32
