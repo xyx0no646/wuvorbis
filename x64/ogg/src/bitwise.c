@@ -296,6 +296,7 @@ long oggpack_look(oggpack_buffer *b,int bits){
     if(b->endbyte*8+bits>b->storage*8)return(-1);
   }
   
+#if 0
 #if	defined(__GNUC__)
 	__asm__ __volatile(
 		"movb %1, %%cl\n\t"
@@ -308,6 +309,8 @@ long oggpack_look(oggpack_buffer *b,int bits){
 	t = *(unsigned __int64*)(b->ptr);
 	return ((long)(t >> b->endbit))&m;
 #else
+#endif
+#endif
   ret=b->ptr[0]>>b->endbit;
   if(bits>8){
     ret|=b->ptr[1]<<(8-b->endbit);  
@@ -321,6 +324,7 @@ long oggpack_look(oggpack_buffer *b,int bits){
     }
   }
   return(m&ret);
+#if 0
 #endif
 }
 
