@@ -4,11 +4,6 @@
 // See details for TVP source distribution.
 //---------------------------------------------------------------------------
 
-#ifndef _WIN32
-#define _cdecl
-#define __int64 int64_t
-#endif
-
 extern "C" {
 #include "vorbis/vorbisfile.h"
 }
@@ -19,17 +14,28 @@ extern "C" {
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
-#include "tp_stub.h"
-#include "WaveIntf.h"
-
-#if 0
 #ifndef NOT_HAVE_TP_STUB
 #include "tp_stub.h"
 #endif
 
-#define EXPORT(hr) extern "C" __declspec(dllexport) hr __stdcall
+#ifndef _WIN32
+#define _cdecl
+#define __int64 int64_t
+#endif
 
+#ifndef TVP_COMPILING_KRKRSDL2
+#ifdef _WIN32
+#define EXPORT(hr) extern "C" __declspec(dllexport) hr __stdcall
+#else
+#define EXPORT(hr) extern "C" __attribute__((visibility ("default"))) hr
+#endif
+#else
+#define EXPORT(hr) static hr
+#endif
+
+#ifdef _WIN32
 #include "tvpsnd.h" // TSS sound system interface definitions
 #endif
 
@@ -47,23 +53,26 @@ static bool OldEncoderWarned = false;
 static LONG AllocCount = 0; // memory block allocation count for decoder
 #endif
 
+#if 0
 static bool Look_Replay_Gain = false; // whether to look replay gain information
 static bool Use_Album_Gain = false; // whether to use album gain, otherwise use track gain
+#endif
 
 //---------------------------------------------------------------------------
-#if 0
+#ifndef TVP_COMPILING_KRKRSDL2
+#ifdef _WIN32
 int WINAPI DllEntryPoint(HINSTANCE hinst, unsigned long reason, void* lpReserved)
 {
 	return 1;
 }
 #endif
+#endif
 //---------------------------------------------------------------------------
-#if 0
-void strcpy_limit(LPWSTR dest, LPWSTR  src, int n)
+void strcpy_limit(TSS_LPWSTR dest, const TSS_LPWSTR  src, int n)
 {
 	// string copy with limitation
 	// this will add a null terminater at destination buffer
-	wcsncpy(dest, src, n-1);
+	TJS_strncpy(dest, src, n-1);
 	dest[n-1] = '\0';
 }
 //---------------------------------------------------------------------------
@@ -79,23 +88,21 @@ public:
 
 public:
 	// IUnknown
-	HRESULT __stdcall QueryInterface(REFIID iid, void ** ppvObject);
-	ULONG __stdcall AddRef(void);
-	ULONG __stdcall Release(void);
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
+	ULONG STDMETHODCALLTYPE AddRef(void);
+	ULONG STDMETHODCALLTYPE Release(void);
 	
 	// ITSSModule
-	HRESULT __stdcall GetModuleCopyright(LPWSTR buffer, unsigned long buflen );
-	HRESULT __stdcall GetModuleDescription(LPWSTR buffer, unsigned long buflen );
-	HRESULT __stdcall GetSupportExts(unsigned long index, LPWSTR mediashortname, LPWSTR buf, unsigned long buflen );
-	HRESULT __stdcall GetMediaInfo(LPWSTR url, ITSSMediaBaseInfo ** info );
-	HRESULT __stdcall GetMediaSupport(LPWSTR url );
-	HRESULT __stdcall GetMediaInstance(LPWSTR url, IUnknown ** instance );
+	HRESULT STDMETHODCALLTYPE GetModuleCopyright(TSS_LPWSTR buffer, TSS_ULONG buflen );
+	HRESULT STDMETHODCALLTYPE GetModuleDescription(TSS_LPWSTR buffer, TSS_ULONG buflen );
+	HRESULT STDMETHODCALLTYPE GetSupportExts(TSS_ULONG index, TSS_LPWSTR mediashortname, TSS_LPWSTR buf, TSS_ULONG buflen );
+	HRESULT STDMETHODCALLTYPE GetMediaInfo(TSS_LPWSTR url, ITSSMediaBaseInfo ** info );
+	HRESULT STDMETHODCALLTYPE GetMediaSupport(TSS_LPWSTR url );
+	HRESULT STDMETHODCALLTYPE GetMediaInstance(TSS_LPWSTR url, IUnknown ** instance );
 };
 //---------------------------------------------------------------------------
-#endif
 
 
-#if 0
 //---------------------------------------------------------------------------
 class VorbisWaveDecoder : public ITSSWaveDecoder // decoder interface
 {
@@ -112,18 +119,18 @@ public:
 
 public:
 	// IUnkown
-	HRESULT __stdcall QueryInterface(REFIID iid, void ** ppvObject);
-	ULONG __stdcall AddRef(void);
-	ULONG __stdcall Release(void);
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
+	ULONG STDMETHODCALLTYPE AddRef(void);
+	ULONG STDMETHODCALLTYPE Release(void);
 
 	// ITSSWaveDecoder
-	HRESULT __stdcall GetFormat(TSSWaveFormat *format);
-	HRESULT __stdcall Render(void *buf, unsigned long bufsamplelen,
-            unsigned long *rendered, unsigned long *status);
-	HRESULT __stdcall SetPosition(unsigned __int64 samplepos);
+	HRESULT STDMETHODCALLTYPE GetFormat(TSSWaveFormat *format);
+	HRESULT STDMETHODCALLTYPE Render(void *buf, TSS_ULONG bufsamplelen,
+            TSS_ULONG *rendered, TSS_ULONG *status);
+	HRESULT STDMETHODCALLTYPE SetPosition(TSS_UINT64 samplepos);
 
 	// others
-	HRESULT SetStream(IStream *stream, LPWSTR url);
+	HRESULT SetStream(IStream *stream, TSS_LPWSTR url);
 
 private:
 	size_t static _cdecl read_func(void *ptr, size_t size, size_t nmemb, void *datasource);
@@ -131,59 +138,6 @@ private:
 	int static _cdecl close_func(void *datasource);
 	long static _cdecl tell_func(void *datasource);
 };
-#endif
-class VorbisWaveDecoder : public tTVPWaveDecoder
-{
-	bool InputFileInit; // whether InputFile is inited
-	OggVorbis_File InputFile; // OggVorbis_File instance
-	IStream *InputStream; // input stream
-	tTVPWaveFormat Format; // output PCM format
-	int CurrentSection; // current section in vorbis stream
-
-public:
-    VorbisWaveDecoder();
-    ~VorbisWaveDecoder();
-
-public:
-    // ITSSWaveDecoder
-    virtual void GetFormat(tTVPWaveFormat & format);
-    virtual bool Render(void *buf, tjs_uint bufsamplelen, tjs_uint& rendered);
-    virtual bool SetPosition(tjs_uint64 samplepos);
-
-    bool SetStream(IStream *stream, const ttstr & url);
-
-    bool Open(const ttstr & url);
-    bool ReadBlock(int , int );
-
-private:
-	size_t static _cdecl read_func(void *ptr, size_t size, size_t nmemb, void *datasource);
-	int static _cdecl seek_func(void *datasource, __int64 offset, int whence);
-	int static _cdecl close_func(void *datasource);
-	long static _cdecl tell_func(void *datasource);
-};
-
-class VorbisWaveDecoderCreator : public tTVPWaveDecoderCreator
-{
-public:
-    tTVPWaveDecoder * Create(const ttstr & storagename, const ttstr & extension) {
-    	IStream *stream;
-		stream = TVPCreateIStream(storagename, TJS_BS_READ);
-		if(!stream)
-		{
-			return nullptr;
-		}
-		VorbisWaveDecoder * decoder = new VorbisWaveDecoder();
-		if(!decoder->SetStream(stream, storagename))
-		{
-			// error; stream may not be a vorbis stream
-			delete decoder;
-			return nullptr;
-		}
-
-        return decoder;
-    }
-};
-#if 0
 //---------------------------------------------------------------------------
 // VorbisModule implementation ##############################################
 //---------------------------------------------------------------------------
@@ -198,7 +152,7 @@ VorbisModule::~VorbisModule()
 	// VorbisModule destructor
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::QueryInterface(REFIID iid, void ** ppvObject)
+HRESULT STDMETHODCALLTYPE VorbisModule::QueryInterface(REFIID iid, void ** ppvObject)
 {
 	// IUnknown::QueryInterface
 
@@ -218,12 +172,12 @@ HRESULT __stdcall VorbisModule::QueryInterface(REFIID iid, void ** ppvObject)
 	return E_NOINTERFACE;
 }
 //---------------------------------------------------------------------------
-ULONG __stdcall VorbisModule::AddRef()
+ULONG STDMETHODCALLTYPE VorbisModule::AddRef()
 {
 	return ++RefCount;
 }
 //---------------------------------------------------------------------------
-ULONG __stdcall VorbisModule::Release()
+ULONG STDMETHODCALLTYPE VorbisModule::Release()
 {
 	if(RefCount == 1)
 	{
@@ -236,44 +190,44 @@ ULONG __stdcall VorbisModule::Release()
 	}
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::GetModuleCopyright(LPWSTR buffer, unsigned long buflen)
+HRESULT STDMETHODCALLTYPE VorbisModule::GetModuleCopyright(TSS_LPWSTR buffer, TSS_ULONG buflen)
 {
 	// return module copyright information
-	strcpy_limit(buffer, L"OggVorbis Plug-in for TVP Sound System (C) 2000 W.Dee <dee@kikyou.info>",
+	strcpy_limit(buffer, TJS_W("OggVorbis Plug-in for TVP Sound System (C) 2000 W.Dee <dee@kikyou.info>"),
 			buflen);
 	return S_OK;
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::GetModuleDescription(LPWSTR buffer, unsigned long buflen )
+HRESULT STDMETHODCALLTYPE VorbisModule::GetModuleDescription(TSS_LPWSTR buffer, TSS_ULONG buflen )
 {
 	// return module description
-	strcpy_limit(buffer, L"Ogg Vorbis (*.ogg) decoder", buflen);
+	strcpy_limit(buffer, TJS_W("Ogg Vorbis (*.ogg) decoder"), buflen);
 	return S_OK;
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::GetSupportExts(unsigned long index, LPWSTR mediashortname,
-												LPWSTR buf, unsigned long buflen )
+HRESULT STDMETHODCALLTYPE VorbisModule::GetSupportExts(TSS_ULONG index, TSS_LPWSTR mediashortname,
+												TSS_LPWSTR buf, TSS_ULONG buflen )
 {
 	// return supported file extensios
 	if(index >= 1) return S_FALSE;
-	wcscpy(mediashortname, L"Ogg Stream Format");
-	strcpy_limit(buf, L".ogg", buflen);
+	TJS_strcpy(mediashortname, TJS_W("Ogg Stream Format"));
+	strcpy_limit(buf, TJS_W(".ogg"), buflen);
 	return S_OK;
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::GetMediaInfo(LPWSTR url, ITSSMediaBaseInfo ** info )
+HRESULT STDMETHODCALLTYPE VorbisModule::GetMediaInfo(TSS_LPWSTR url, ITSSMediaBaseInfo ** info )
 {
 	// return media information interface
 	return E_NOTIMPL; // not implemented
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::GetMediaSupport(LPWSTR url )
+HRESULT STDMETHODCALLTYPE VorbisModule::GetMediaSupport(TSS_LPWSTR url )
 {
 	// return media support interface
 	return E_NOTIMPL; // not implemented
 }
 //---------------------------------------------------------------------------
-HRESULT __stdcall VorbisModule::GetMediaInstance(LPWSTR url, IUnknown ** instance )
+HRESULT STDMETHODCALLTYPE VorbisModule::GetMediaInstance(TSS_LPWSTR url, IUnknown ** instance )
 {
 	// create a new media interface
 	HRESULT hr;
@@ -299,16 +253,13 @@ HRESULT __stdcall VorbisModule::GetMediaInstance(LPWSTR url, IUnknown ** instanc
 
 	return S_OK;
 }
-#endif
 //---------------------------------------------------------------------------
 // VorbisWaveDecoder implementation #########################################
 //---------------------------------------------------------------------------
 VorbisWaveDecoder::VorbisWaveDecoder()
 {
 	// VorbisWaveDecoder constructor
-#if 0
 	RefCount = 1;
-#endif
 	InputFileInit = false;
 	InputStream = NULL;
 	CurrentSection = -1;
@@ -329,7 +280,6 @@ VorbisWaveDecoder::~VorbisWaveDecoder()
 	}
 }
 //---------------------------------------------------------------------------
-#if 0
 HRESULT VorbisWaveDecoder::QueryInterface(REFIID iid, void ** ppvObject)
 {
 	// IUnknown::QueryInterface
@@ -349,17 +299,13 @@ HRESULT VorbisWaveDecoder::QueryInterface(REFIID iid, void ** ppvObject)
 	}
 	return E_NOINTERFACE;
 }
-#endif
 //---------------------------------------------------------------------------
-#if 0
-ULONG __stdcall VorbisWaveDecoder::AddRef()
+ULONG STDMETHODCALLTYPE VorbisWaveDecoder::AddRef()
 {
 	return ++RefCount;
 }
-#endif
 //---------------------------------------------------------------------------
-#if 0
-ULONG __stdcall VorbisWaveDecoder::Release()
+ULONG STDMETHODCALLTYPE VorbisWaveDecoder::Release()
 {
 	if(RefCount == 1)
 	{
@@ -371,10 +317,8 @@ ULONG __stdcall VorbisWaveDecoder::Release()
 		return --RefCount;
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-#if 0
-HRESULT __stdcall VorbisWaveDecoder::GetFormat(TSSWaveFormat *format)
+HRESULT STDMETHODCALLTYPE VorbisWaveDecoder::GetFormat(TSSWaveFormat *format)
 {
 	// return PCM format
 	if(!InputFileInit)
@@ -386,18 +330,9 @@ HRESULT __stdcall VorbisWaveDecoder::GetFormat(TSSWaveFormat *format)
 
 	return S_OK;
 }
-#endif
 //---------------------------------------------------------------------------
-void VorbisWaveDecoder::GetFormat(tTVPWaveFormat & format)
-{
-	format = Format;
-}
-//---------------------------------------------------------------------------
-#if 0
-HRESULT __stdcall VorbisWaveDecoder::Render(void *buf, unsigned long bufsamplelen,
-            unsigned long *rendered, unsigned long *status)
-#endif
-bool VorbisWaveDecoder::Render(void *buf, tjs_uint bufsamplelen, tjs_uint& rendered)
+HRESULT STDMETHODCALLTYPE VorbisWaveDecoder::Render(void *buf, TSS_ULONG bufsamplelen,
+            TSS_ULONG *rendered, TSS_ULONG *status)
 {
 	// render output PCM
 	if(!InputFileInit) return E_FAIL; // InputFile is yet not inited
@@ -406,7 +341,7 @@ bool VorbisWaveDecoder::Render(void *buf, tjs_uint bufsamplelen, tjs_uint& rende
 
 	int res;
 	int pos = 0; // decoded PCM (in bytes)
-	int remain = bufsamplelen * Format.Channels * pcmsize; // remaining PCM (in bytes)
+	int remain = bufsamplelen * Format.dwChannels * pcmsize; // remaining PCM (in bytes)
 
 	while(remain)
 	{
@@ -421,12 +356,8 @@ bool VorbisWaveDecoder::Render(void *buf, tjs_uint bufsamplelen, tjs_uint& rende
 		remain -= res;
 	}
 
-	pos /= (Format.Channels * pcmsize); // convert to PCM position
+	pos /= (Format.dwChannels * pcmsize); // convert to PCM position
 	
-	rendered = pos;
-
-	return !((unsigned int)pos < bufsamplelen);
-#if 0
 	if(status)
 	{
 		*status = ((unsigned int)pos < bufsamplelen)?0:1;
@@ -439,35 +370,26 @@ bool VorbisWaveDecoder::Render(void *buf, tjs_uint bufsamplelen, tjs_uint& rende
 	}
 
 	return S_OK;
-#endif
 }
 //---------------------------------------------------------------------------
-#if 0
-HRESULT __stdcall VorbisWaveDecoder::SetPosition(unsigned __int64 samplepos)
-#endif
-bool VorbisWaveDecoder::SetPosition(tjs_uint64 samplepos)
+HRESULT STDMETHODCALLTYPE VorbisWaveDecoder::SetPosition(TSS_UINT64 samplepos)
 {
 	// set PCM position (seek)
-	if(!InputFileInit) return false;
+	if(!InputFileInit) return E_FAIL;
 
 	if(0 != ov_pcm_seek(&InputFile, samplepos))
 	{
-		return false;
+		return E_FAIL;
 	}
 
-	return true;
+	return S_OK;
 }
 //---------------------------------------------------------------------------
-#if 0
-HRESULT VorbisWaveDecoder::SetStream(IStream *stream, LPWSTR url)
-#endif
-bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
+HRESULT VorbisWaveDecoder::SetStream(IStream *stream, TSS_LPWSTR url)
 {
 	// set input stream
 	InputStream = stream;
-#if 0
 	InputStream->AddRef(); // add-ref
-#endif
 
 	ov_callbacks callbacks = {read_func, seek_func, close_func, tell_func};
 		// callback functions
@@ -476,12 +398,9 @@ bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
 	if(ov_open_callbacks(this, &InputFile, NULL, 0, callbacks) < 0)
 	{
 		// error!
-		if (InputStream)
-		{
-			InputStream->Release();
-			InputStream = NULL;
-		}
-		return false;
+		InputStream->Release();
+		InputStream = NULL;
+		return E_FAIL;
 	}
 
 	InputFileInit = true;
@@ -491,37 +410,26 @@ bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
 	vi = ov_info(&InputFile, -1);
 	if(!vi)
 	{
-		if (InputStream)
-		{
-			InputStream->Release();
-			InputStream = NULL;
-		}
-		return false;
+		return E_FAIL;
 	}
 
 	// set Format up
-	memset(&Format, 0, sizeof(Format));
-#if 0
+#ifdef _WIN32
 	ZeroMemory(&Format, sizeof(Format));
+#else
+	memset(&Format, 0, sizeof(Format));
+#endif
 	Format.dwSamplesPerSec = vi->rate;
 	Format.dwChannels = vi->channels;
 	Format.dwBitsPerSample = FloatExtraction ? (0x10000 + 32) :  16;
 	Format.dwSeekable = 2;
-#endif
-	memset(&Format, 0, sizeof(Format));
-	Format.SamplesPerSec = vi->rate;
-	Format.Channels = vi->channels;
-	Format.BitsPerSample = FloatExtraction ? 32 : 16;
-	Format.BytesPerSample = 2;
-	Format.IsFloat = FloatExtraction;
-	Format.Seekable = 2;
 
 	__int64 pcmtotal = ov_pcm_total(&InputFile, -1); // PCM total samples
 	if(pcmtotal<0) pcmtotal = 0;
-	Format.TotalSamples = pcmtotal;
+	Format.ui64TotalSamples = pcmtotal;
 
 	double timetotal = ov_time_total(&InputFile, -1); // total time in sec.
-	if(timetotal<0) Format.TotalTime = 0; else Format.TotalTime = timetotal * 1000.0;
+	if(timetotal<0) Format.dwTotalTime = 0; else Format.dwTotalTime = timetotal * 1000.0;
 
 #ifndef NOT_HAVE_TP_STUB
 	// check old vorbis stream, which is generated by old encoder.
@@ -570,7 +478,7 @@ bool VorbisWaveDecoder::SetStream(IStream *stream, const ttstr & url)
 #endif
 #endif
 
-	return true;
+	return S_OK;
 }
 //---------------------------------------------------------------------------
 size_t _cdecl VorbisWaveDecoder::read_func(void *ptr, size_t size, size_t nmemb, void *datasource)
@@ -663,67 +571,9 @@ extern "C"
 	void scale_FLOOR1_fromdB_LOOKUP(float fac) ;
 	void scale_FROMdB2_LOOKUP(float fac) ;
 }
-
-
-static VorbisWaveDecoderCreator wuvorbis_creator;
-
-
-//---------------------------------------------------------------------------
-// tTJSNC_WuvorbisInternal : wuvorbis internal class
-//---------------------------------------------------------------------------
-class tTJSNC_WuvorbisInternal : public tTJSNativeClass
-{
-public:
-	tTJSNC_WuvorbisInternal();
-
-	static tjs_uint32 ClassID;
-
-protected:
-	tTJSNativeInstance * CreateNativeInstance();
-};
-
-//---------------------------------------------------------------------------
-// tTJSNC_WuvorbisInternal
-//---------------------------------------------------------------------------
-tjs_uint32 tTJSNC_WuvorbisInternal::ClassID = -1;
-tTJSNC_WuvorbisInternal::tTJSNC_WuvorbisInternal() : tTJSNativeClass(TJS_W("WuvorbisInternal"))
-{
-	TJS_BEGIN_NATIVE_MEMBERS(WuvorbisInternal)
-	TJS_DECL_EMPTY_FINALIZE_METHOD
-//----------------------------------------------------------------------
-TJS_BEGIN_NATIVE_CONSTRUCTOR_DECL_NO_INSTANCE(/*TJS class name*/WuvorbisInternal)
-{
-	return TJS_S_OK;
-}
-TJS_END_NATIVE_CONSTRUCTOR_DECL(/*TJS class name*/WuvorbisInternal)
-//----------------------------------------------------------------------
-
-//----------------------------------------------------------------------
-	TJS_END_NATIVE_MEMBERS
-
-} // end of tTJSNC_WuvorbisInternal::tTJSNC_WuvorbisInternal
-//---------------------------------------------------------------------------
-tTJSNativeInstance *tTJSNC_WuvorbisInternal::CreateNativeInstance()
-{
-	return NULL;
-}
-static iTJSDispatch2 * TVPCreateNativeClass_WuvorbisInternal(iTJSDispatch2* global)
-{
-	TVPAlive = true;
-	TVPRegisterWaveDecoderCreator(&wuvorbis_creator);
-
-	Look_Replay_Gain = true; // whether to look replay gain information
-	Use_Album_Gain = false; // whether to use album gain, otherwise use track gain
-	iTJSDispatch2 *cls = new tTJSNC_WuvorbisInternal();
-	return cls;
-}
-
-static tTVPAtInstallClass TVPInstallClassWuvorbisInternal(TJS_W("WuvorbisInternal"), TVPCreateNativeClass_WuvorbisInternal, TJS_W(""));
-
-#if 0
 //---------------------------------------------------------------------------
 EXPORT(HRESULT) GetModuleInstance(ITSSModule **out, ITSSStorageProvider *provider,
-	IStream * config, HWND mainwin)
+	IStream * config, TSS_HWND mainwin)
 {
 	// GetModuleInstance function (exported)
 
@@ -731,6 +581,7 @@ EXPORT(HRESULT) GetModuleInstance(ITSSModule **out, ITSSStorageProvider *provide
 	*out = new VorbisModule();
 	return S_OK;
 }
+#if 0
 //---------------------------------------------------------------------------
 static void InternalSetCPUType(tjs_uint32 cputype)
 {
@@ -740,15 +591,17 @@ static void InternalSetCPUType(tjs_uint32 cputype)
 	if(!CPU_MMX) CPU_3DN = 0; // 3D Now! uses MMX registers
 	if(CPU_SSE && CPU_3DN) CPU_SSE = 0; // Athlon XP; 3DNow! is faster than SSE on this decoder.
 }
+#endif
 //---------------------------------------------------------------------------
+#ifndef TVP_COMPILING_KRKRSDL2
 EXPORT(HRESULT) V2Link(iTVPFunctionExporter *exporter)
 {
-	fprintf(stderr, "WUVorbis Got V2Link!!\n");
 #ifndef NOT_HAVE_TP_STUB
 	// exported function, only called by kirikiri ver 2+
 	TVPAlive = true;
 	TVPInitImportStub(exporter);
 
+#if 0
 	// retrieve CPU information
 	tjs_uint32 cputype = TVPGetCPUType();
 
@@ -814,6 +667,7 @@ EXPORT(HRESULT) V2Link(iTVPFunctionExporter *exporter)
 			Use_Album_Gain = true;
 		}
 	}
+#endif
 
 #endif
 
@@ -826,16 +680,20 @@ EXPORT(HRESULT) V2Unlink()
 	TVPUninitImportStub();
 #endif
 
+#if 0
 	if(AllocCount != 0)
 	{
 		// Not all memory blockes are freed
 //		MessageBox(NULL, "Memory leak detected in wuvorbis.dll", "DEBUG", MB_OK);
 	}
+#endif
 
 	return S_OK;
 }
+#endif
 //---------------------------------------------------------------------------
 
+#if 0
 //---------------------------------------------------------------------------
 // ##########################################################################
 //---------------------------------------------------------------------------
@@ -970,3 +828,56 @@ extern "C" void ScaleOutput(float scale)
 #include "decapi/include/wuvorbisfile.h"
 #include "wuvorbisfile_stub.c"
 #endif
+
+#ifdef TVP_COMPILING_KRKRSDL2
+//---------------------------------------------------------------------------
+// tTJSNC_WuvorbisInternal : wuvorbis internal class
+//---------------------------------------------------------------------------
+class tTJSNC_WuvorbisInternal : public tTJSNativeClass
+{
+public:
+	tTJSNC_WuvorbisInternal();
+
+	static tjs_uint32 ClassID;
+
+protected:
+	tTJSNativeInstance * CreateNativeInstance();
+};
+
+//---------------------------------------------------------------------------
+// tTJSNC_WuvorbisInternal
+//---------------------------------------------------------------------------
+tjs_uint32 tTJSNC_WuvorbisInternal::ClassID = -1;
+tTJSNC_WuvorbisInternal::tTJSNC_WuvorbisInternal() : tTJSNativeClass(TJS_W("WuvorbisInternal"))
+{
+	TJS_BEGIN_NATIVE_MEMBERS(WuvorbisInternal)
+	TJS_DECL_EMPTY_FINALIZE_METHOD
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_CONSTRUCTOR_DECL_NO_INSTANCE(/*TJS class name*/WuvorbisInternal)
+{
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_CONSTRUCTOR_DECL(/*TJS class name*/WuvorbisInternal)
+//----------------------------------------------------------------------
+
+//----------------------------------------------------------------------
+	TJS_END_NATIVE_MEMBERS
+
+} // end of tTJSNC_WuvorbisInternal::tTJSNC_WuvorbisInternal
+//---------------------------------------------------------------------------
+tTJSNativeInstance *tTJSNC_WuvorbisInternal::CreateNativeInstance()
+{
+	return NULL;
+}
+static iTJSDispatch2 * TVPCreateNativeClass_WuvorbisInternal(iTJSDispatch2* global)
+{
+	TVPAlive = true;
+	TVPRegisterTSSWaveDecoder(&GetModuleInstance);
+
+	iTJSDispatch2 *cls = new tTJSNC_WuvorbisInternal();
+	return cls;
+}
+
+static tTVPAtInstallClass TVPInstallClassWuvorbisInternal(TJS_W("WuvorbisInternal"), TVPCreateNativeClass_WuvorbisInternal, TJS_W(""));
+#endif
+
