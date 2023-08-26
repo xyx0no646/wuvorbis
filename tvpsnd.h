@@ -52,8 +52,10 @@ typedef interface ITSSWaveDecoder ITSSWaveDecoder;
 #endif 	/* __ITSSWaveDecoder_FWD_DEFINED__ */
 
 
+#if 0
 void * __RPC_USER MIDL_user_allocate(SIZE_T);
 void __RPC_USER MIDL_user_free( void __RPC_FAR * ); 
+#endif
 
 
 #ifndef __TVPSndSysLib_LIBRARY_DEFINED__
