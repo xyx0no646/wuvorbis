@@ -12,3 +12,5 @@
 *.VC.db
 *.cache
 .vs/
+build/
+build-*/
